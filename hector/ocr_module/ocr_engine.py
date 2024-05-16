@@ -1,7 +1,8 @@
+from typing import Union
 import easyocr
 from pathlib import Path
 from memory_profiler import profile
-
+import numpy as np
 
 class OCR:
     # @profile
@@ -9,7 +10,7 @@ class OCR:
         self.reader = easyocr.Reader(lang_list = ['en'])
 
     # @profile
-    def extract_text(self, image:Path):
+    def extract_text(self, image:Union[Path,np.ndarray]):
         """
         Extract text from image
         """
