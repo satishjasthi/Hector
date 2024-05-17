@@ -26,12 +26,16 @@ class ObjectDetector:
         self.model_name = model_name
         self.model_path = f"{model_name}.pt"
         self.model_url = f"https://github.com/ultralytics/assets/releases/download/v8.2.0/{self.model_path}"
+        # TODO Update the model path to take from models dir
+        base_dir = Path(__file__).resolve().parent 
+        self.face_model_path = str(base_dir/"yolov8n-face.pt")
 
         # Download if model doesn't exist
         if not Path(self.model_path).is_file():
             self._download_model()
 
         self.model = YOLO(self.model_path)
+        self.face_model = YOLO(self.face_model_path)
 
     def _download_model(self):
         """Downloads the specified YOLOv8 model."""
@@ -48,13 +52,23 @@ class ObjectDetector:
         Returns:
             List of detections, each a list of [x1, y1, x2, y2, class_name, confidence].
         """
+        # common objects
+        d1 = self.model.predict(image_path)
 
-        results = self.model.predict(image_path)
-        return [
-            [round(x) for x in box.xyxy[0].tolist()]
-            + [results[0].names[int(box.cls[0])], round(box.conf[0].item(), 2)]
-            for box in results[0].boxes
-        ]
+        # face detections
+        d2 = self.face_model.predict(image_path)
+        results = []
+        for detection in [d1, d2]:
+            for box in detection[0].boxes:
+                results.append(
+                    [round(x) for x in box.xyxy[0].tolist()]
+                    + [
+                        detection[0].names[int(box.cls[0])],
+                        round(box.conf[0].item(), 2),
+                    ]
+                )
+
+        return results
 
     def visualize_predictions(
         self, image_path, predictions, class_colors=None, font_scale=0.5
@@ -100,5 +114,3 @@ class ObjectDetector:
             name: (randint(0, 255), randint(0, 255), randint(0, 255))
             for name in unique_classes
         }
-
-
